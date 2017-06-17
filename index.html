@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="./css/lib/mini-default.min.css">
+  <style>
+    div span {
+        font-size: 0.77rem;
+    }
+    .blue-box {
+      color: #404e4d;
+      background-color: #62bec1;
+      border-radius: 4px;
+      padding-left: 4px;
+      padding-right: 4px;
+      font-size: 0.88rem;
+    }
+    .white-box {
+      padding-left: 4px;
+      padding-right: 4px;
+      margin-top: 2px;
+      font-size: 0.77rem;
+    }
+  </style>
+  <title>Test MiniCSS</title>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-1">
+        <h6>REDSHIFT<small>today</small></h6>
+      </div>
+      <div class="col-sm-11">
+        <h6>SYNTAXVAL<small class="xlm-account-number"></small></h6>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-4">
+          <div class="blue-box">Asset Sheet</div>
+      </div>
+      <div class="col-sm-4">
+          <div class="blue-box">Balance <small>(Native)</small></div>
+      </div>
+      <div class="col-sm-4">
+          <div class="blue-box">Market Value <small>(EUR)</small></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-4">
+          <div class="white-box">Stellar Lumens <small>(XLM)</small></div>
+      </div>
+      <div class="col-sm-4">
+          <div class="white-box"><span class="xlm-balance">0.00</span></div>
+      </div>
+      <div class="col-sm-4">
+          <div class="white-box"><span class="xlm-balance-eur">0.00</span> &euro;</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+<script src="./js/lib/require.js"></script>
+<script src="./js/redshift.js"></script>
+</html>
