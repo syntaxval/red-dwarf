@@ -23,6 +23,11 @@
       margin-top: 2px;
       font-size: 0.77rem;
     }
+
+    button.small {
+        border-radius: 4px;
+    }
+
   </style>
   <title>Test MiniCSS</title>
 </head>
@@ -30,12 +35,21 @@
 <body>
   <div class="container">
     <div class="row">
-      <div class="col-sm-1">
-        <h6>REDSHIFT<small>today</small></h6>
-      </div>
-      <div class="col-sm-11">
-        <h6>SYNTAXVAL<small class="xlm-account-number"></small></h6>
-      </div>
+        <div class="col-sm-1">
+            <h6>REDSHIFT<small>today</small></h6>
+        </div>
+        <div class="col-sm-9">
+            <h6>SYNTAXVAL<small class="xlm-account-number"></small></h6>
+        </div>
+        <div class="col-sm-1">
+            <button id="button-update" class="small tertiary">Update</button>
+        </div>
+        <div class="col-sm-1">
+            <h6><div class="input-group">
+                <input type="checkbox" id="test-net-switch" tabindex="0">
+                <label for="test-net-switch" class="switch">testnet</label>
+            </div></h6>
+        </div>
     </div>
   </div>
 
