@@ -10,15 +10,17 @@ globals requirejs, StellarSdk
 requirejs.config({
     baseUrl: "js/lib",
     paths: {
-        jquery: "jquery-3.2.1.min"
+        jquery: "jquery-3.2.1.min",
+        handlebars: "handlebars-v4.0.10"
     }
 });
 
 requirejs([
     "jquery",
     "uri/URI",
+    "handlebars",
     "stellar-sdk.min"
-], function ($, URI) {
+], function ($, URI, Handlebars) {
 
   	"use strict";
 
@@ -49,12 +51,28 @@ requirejs([
 
         $.redshift.conf.url.strnet = "https://horizon.stellar.org";
         $.redshift.conf.url.ticker = "https://api.cryptonator.com/api/ticker/xlm-eur";
+        $.redshift.conf.url.exchanges = function (ticker) {
+            return "https://api.cryptonator.com/api/ticker/" + ticker + "-eur";
+        };
         $.redshift.conf.account = "GDQXGA5JF2S4QLA55TBWZLX666INIOPRY52V2PAAKOOI7XU4P47TLLJ4";
 
 
 
 
         /************************ FUNCTION DEFINITIONS ************************/
+
+        // $.redshift.lib.d_forEach = function (iterable, callback) {
+        //     var dfd = $.Deferred();
+        //     iterable.forEach(function(item, index){
+        //         dfd.then(function(){
+        //             callback(item).then(function (result) {
+        //                 item.ex_rate = result.ticker.price;
+        //             });
+        //         });
+        //     });
+        //     return dfd.resolve(iterable);
+        // };
+
 
         $.redshift.lib.addEvent = function (selector, eventType, f) {
             $(selector).each(function () {
@@ -67,10 +85,11 @@ requirejs([
             let d_getAccountInfo = function (acctNum) {
                 return server.loadAccount(acctNum).then(function(account) {
                     let summary = [];
-                    account.balances.forEach(function(balance) {
+                    account.balances.forEach(function(accountBalance) {
                         summary.push({
-                            type: balance.asset_type,
-                            balance: balance.balance
+                            asset_type: accountBalance.asset_type,
+                            asset_code: accountBalance.asset_code,
+                            balance: accountBalance.balance
                         });
                     });
                     return summary;
@@ -78,33 +97,48 @@ requirejs([
                     console.log("Error accessing account info. [" + err.message + "]");
                 });
             };
-            let d_getExchangeRates = function () {
-                return $.ajax($.redshift.conf.url.ticker).then(function (erate) {
-                    return erate;
-                }, function (err) {
-                    console.log("Error getting exchange rates. [" + err.message + "]");
-                    console.log(err.message);
-                });
+            let d_getExchangeRate = function (index, asset) {
+                // asset.asset_type
+                return $.ajax($.redshift.conf.url.exchanges("XLM"))
+                    .then(function (exchangeRate) {
+                        $("." + asset.asset_type + "-balance-eur").text(
+                            (parseFloat(asset.balance) * parseFloat(exchangeRate.ticker.price)).toFixed(2)
+                        );
+                        return exchangeRate;
+                    }, function (err) {
+                        console.log("Error getting exchange rates. [" + err.message + "]");
+                        console.log(err.message);
+                    });
             };
 
 
+            // load account info first
+            $.when(d_getAccountInfo(accountNumber))
+            .then(function (assets) {
+                let bodySource = $("#body-template").html();
+                let bodyTemplate = Handlebars.compile(bodySource);
+                let bodyContext = {assets: assets};
+                $(".container.body").html(bodyTemplate(bodyContext));
 
-            $.when(
+                $.each(assets, d_getExchangeRate);
 
-                // load account information
-                d_getAccountInfo(accountNumber),
-                // get exchange rates
-                d_getExchangeRates()
+                return assets;
+            })
+            .done(function (assets) {
+                // window.xxx = assets[0];
+                // console.log(assets[0]);
+                // let bodySource = $("#body-template").html();
+                // let bodyTemplate = Handlebars.compile(bodySource);
+                // let bodyContext = {assets: assets};
+                // $(".container.body").html(bodyTemplate(bodyContext));
 
-            ).done(function (result, erate) {
-
-                if (result !== undefined) {
-                    $(".xlm-account-number").text(accountNumber);
-                    $(".xlm-balance").text(result[0].balance);
-                    $(".xlm-balance-eur").text(
-                        (parseFloat(result[0].balance) * parseFloat(erate.ticker.price)).toFixed(2)
-                    );
-                }
+                // if (result !== undefined) {
+                //     $(".xlm-account-number").text(accountNumber);
+                //     $(".xlm-balance").text(result[0].balance);
+                //     $(".xlm-balance-eur").text(
+                //         (parseFloat(result[0].balance) * parseFloat(exchangeRates.ticker.price)).toFixed(2)
+                //     );
+                // }
 
             });
         };
@@ -112,6 +146,16 @@ requirejs([
 
         /****************************** RUNTIME *******************************/
         $(document).ready(function() {
+
+            let headerSource = $("#header-template").html();
+            let headerTemplate = Handlebars.compile(headerSource);
+            let headerContext = {username: "SYNTAXVAL"};
+
+
+
+
+            $(".container.header").html(headerTemplate(headerContext));
+
             $.redshift.lib.addEvent(
                 "#button-update",
                 "click",
