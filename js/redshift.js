@@ -38,7 +38,30 @@ requirejs([
         /* Setup 'conf' namespace */
         if ($.redshift.conf === undefined) {
             $.redshift.conf = {
-                url: {}
+                url: {},
+                db: {
+                    assetTypeMap: {
+                        native: {
+                            desc: "Stellar Lumens",
+                            isoCode: "XLM"
+                        },
+                        credit_alphanum4: {
+                            "HUG" : {
+                                desc: "Jed McCaleb Hugs"
+                            }
+                        }
+                    }
+                },
+                defaultQuotedCurrency: "EUR"
+            };
+        }
+
+        if ($.redshift.api === undefined) {
+            $.redshift.api = {
+                account: {},
+                balance: {},
+                asset: {},
+                network: {}
             };
         }
 
@@ -49,30 +72,12 @@ requirejs([
             };
         }
 
-        $.redshift.conf.url.strnet = "https://horizon.stellar.org";
-        $.redshift.conf.url.ticker = "https://api.cryptonator.com/api/ticker/xlm-eur";
-        $.redshift.conf.url.exchanges = function (ticker) {
-            return "https://api.cryptonator.com/api/ticker/" + ticker + "-eur";
-        };
+        $.redshift.conf.url.network;
         $.redshift.conf.account = "GDQXGA5JF2S4QLA55TBWZLX666INIOPRY52V2PAAKOOI7XU4P47TLLJ4";
-
-
+        $.redshift.conf.url.tickerBase = "https://api.cryptonator.com/api/ticker/";
 
 
         /************************ FUNCTION DEFINITIONS ************************/
-
-        // $.redshift.lib.d_forEach = function (iterable, callback) {
-        //     var dfd = $.Deferred();
-        //     iterable.forEach(function(item, index){
-        //         dfd.then(function(){
-        //             callback(item).then(function (result) {
-        //                 item.ex_rate = result.ticker.price;
-        //             });
-        //         });
-        //     });
-        //     return dfd.resolve(iterable);
-        // };
-
 
         $.redshift.lib.addEvent = function (selector, eventType, f) {
             $(selector).each(function () {
@@ -80,87 +85,157 @@ requirejs([
             });
         };
 
-        $.redshift.lib.printAccountSummary = function (accountNumber) {
-            let server = new StellarSdk.Server($.redshift.conf.url.strnet);
-            let d_getAccountInfo = function (acctNum) {
-                return server.loadAccount(acctNum).then(function(account) {
-                    let summary = [];
-                    account.balances.forEach(function(accountBalance) {
-                        summary.push({
-                            asset_type: accountBalance.asset_type,
-                            asset_code: accountBalance.asset_code,
-                            balance: accountBalance.balance
-                        });
-                    });
-                    return summary;
-                }, function (err) {
-                    console.log("Error accessing account info. [" + err.message + "]");
-                });
-            };
-            let d_getExchangeRate = function (index, asset) {
-                // asset.asset_type
-                return $.ajax($.redshift.conf.url.exchanges("XLM"))
-                    .then(function (exchangeRate) {
-                        $("." + asset.asset_type + "-balance-eur").text(
-                            (parseFloat(asset.balance) * parseFloat(exchangeRate.ticker.price)).toFixed(2)
-                        );
-                        return exchangeRate;
-                    }, function (err) {
-                        console.log("Error getting exchange rates. [" + err.message + "]");
-                        console.log(err.message);
-                    });
-            };
 
-
-            // load account info first
-            $.when(d_getAccountInfo(accountNumber))
-            .then(function (assets) {
-                let bodySource = $("#body-template").html();
-                let bodyTemplate = Handlebars.compile(bodySource);
-                let bodyContext = {assets: assets};
-                $(".container.body").html(bodyTemplate(bodyContext));
-
-                $.each(assets, d_getExchangeRate);
-
-                return assets;
-            })
-            .done(function (assets) {
-                // window.xxx = assets[0];
-                // console.log(assets[0]);
-                // let bodySource = $("#body-template").html();
-                // let bodyTemplate = Handlebars.compile(bodySource);
-                // let bodyContext = {assets: assets};
-                // $(".container.body").html(bodyTemplate(bodyContext));
-
-                // if (result !== undefined) {
-                //     $(".xlm-account-number").text(accountNumber);
-                //     $(".xlm-balance").text(result[0].balance);
-                //     $(".xlm-balance-eur").text(
-                //         (parseFloat(result[0].balance) * parseFloat(exchangeRates.ticker.price)).toFixed(2)
-                //     );
-                // }
-
-            });
+        $.redshift.api.network.setStellarNet = function (testnet) {
+            if (testnet === true) {
+                return "https://horizon-testnet.stellar.org";
+            } else {
+                return "https://horizon.stellar.org";
+            }
         };
 
+
+        $.redshift.api.network.getTicker = function (base, quoted) {
+            return $.redshift.conf.url.tickerBase + base + "-" + quoted;
+        };
+
+
+        $.redshift.api.account.get = function (accountNumber, network) {
+            let dfd = $.Deferred();
+            let server = new StellarSdk.Server(network);
+            return server.loadAccount(accountNumber)
+                .then(function(account) {
+                    return dfd.resolve({account: account});
+                }, function (err) {
+                    let error = err.message.status + " [" + err.message.title +
+                        "]: " + err.message.detail;
+                    console.log(error);
+                    return dfd.reject({error: error});
+                });
+        };
+
+
+        $.redshift.api.balance.getExchangeRate = function (base, quoted) {
+            let dfd = $.Deferred();
+            return $.ajax($.redshift.api.network.getTicker(base, quoted))
+                .then(function (result) {
+                    return dfd.resolve(result);
+                }, function (err) {
+                    console.log(err);
+                    return dfd.reject({error: err})
+                });
+        };
+
+
+        $.redshift.lib.assetValue = function (asset, quoted) {
+            let dfd = $.Deferred();
+
+            if (asset.asset_type === "native") {
+                asset.asset_code = $.redshift.conf.db.assetTypeMap.native.isoCode;
+                asset.asset_desc = $.redshift.conf.db.assetTypeMap.native.desc;
+            } else {
+                let info = $.redshift.conf.db.assetTypeMap[asset.asset_type];
+                if (info !== undefined) {
+                    asset.asset_desc = info[asset.asset_code].desc;
+                }
+            }
+
+            return $.redshift.api.balance.getExchangeRate(
+                asset.asset_code, quoted
+            ).then(function (result) {
+                if (result.success === true) {
+                    let value = (
+                        parseFloat(asset.balance) *
+                        parseFloat(result.ticker.price)
+                    ).toFixed(2)
+                    return dfd.resolve(value);
+                } else {
+                    return dfd.resolve(result.error);
+                }
+            });
+
+        }
 
         /****************************** RUNTIME *******************************/
         $(document).ready(function() {
 
+            let navbarSource = $("#navbar-template").html();
+            let navbarTemplate = Handlebars.compile(navbarSource);
+            let navbarContext = {
+                buttonAccount: (localStorage.getItem("redshift_G") === null ? "Open Account" : "Close Account"),
+                buttonUpdateClass: (localStorage.getItem("redshift_G") === null ? "hidden" : "")
+            }
+
             let headerSource = $("#header-template").html();
             let headerTemplate = Handlebars.compile(headerSource);
-            let headerContext = {username: "SYNTAXVAL"};
+            let headerContext = {
+                username: localStorage.getItem("redshift_G")
+            };
 
+            $.redshift.conf.url.network =
+                $.redshift.api.network.setStellarNet();
 
-
-
+            $(".container.navbar").html(navbarTemplate(navbarContext));
             $(".container.header").html(headerTemplate(headerContext));
 
-            $.redshift.lib.addEvent(
-                "#button-update",
-                "click",
+            $.redshift.lib.addEvent("#button-account", "click",
                 function (e) {
-                    $.redshift.lib.printAccountSummary($.redshift.conf.account);
+                    if (localStorage.getItem("redshift_G") === null) {
+                        let pair = StellarSdk.Keypair.random();
+                        localStorage.setItem("redshift_G", pair.publicKey());
+                        // TODO: for now store secret here but will remove for user's eyes only later on.
+                        localStorage.setItem("redshift_S", pair.secret());
+                        e.target.textContent = "Close Account";
+                        $("#username").text(localStorage.getItem("redshift_G"));
+                        $("#button-update").removeClass("hidden");
+                        $.redshift.conf.account = localStorage.getItem("redshift_G");
+                    } else {
+                        localStorage.removeItem("redshift_G");
+                        localStorage.removeItem("redshift_S");
+                        e.target.textContent = "Open Account";
+                        $("#username").text("");
+                        $("#button-update").addClass("hidden");
+                        $.redshift.conf.account = null;
+                    }
+                }
+            );
+
+            $.redshift.lib.addEvent("#button-update", "click",
+                function (e) {
+                    $(".spinner-eclipse").removeClass("hidden");
+                    $.redshift.api.account.get(
+                        $.redshift.conf.account,
+                        $.redshift.conf.url.network
+                    ).then(function (resultObj) {
+                        let promises = [];
+                        let balances = resultObj.account.balances;
+                        for (let i = 0; i < balances.length; i++) {
+                            promises.push(
+                                $.redshift.lib.assetValue(
+                                    balances[i],
+                                    $.redshift.conf.defaultQuotedCurrency
+                                )
+                            );
+                        }
+                        return $.when.apply($, promises).then(function () {
+                            for (let i = 0; i < arguments.length; i++) {
+                                balances[i].ex_rate = arguments[i];
+                            }
+                            return resultObj;
+                        });
+                    }, function (err) {
+                        // TODO: Add this error to message/log
+                        return $.Deferred.reject(err);
+                    }).then(function (result) {
+                        let bodySource = $("#body-template").html();
+                        let bodyTemplate = Handlebars.compile(bodySource);
+                        let bodyContext = {assets: result.account.balances};
+                        $(".container.body").html(bodyTemplate(bodyContext));
+                    }, function (err) {
+                        // nothing to do here
+                    }).done(function () {
+                        $(".spinner-eclipse").addClass("hidden");
+                    });
                 }
             );
 
@@ -168,15 +243,15 @@ requirejs([
                 "#test-net-switch",
                 "change",
                 function (element) {
-                    let uri = new URI($.redshift.conf.url.strnet);
                     if (element.currentTarget.checked) {
-                        uri.subdomain("test-horizon");
+                        $.redshift.conf.url.network =
+                            $.redshift.api.network.setStellarNet(true);
                         $("body").css("background-color", "#ededed");
                     } else {
-                        uri.subdomain("horizon");
+                        $.redshift.conf.url.network =
+                            $.redshift.api.network.setStellarNet();
                         $("body").css("background-color", "#fff");
                     }
-                    $.redshift.conf.url.strnet = uri;
                 }
             );
         });

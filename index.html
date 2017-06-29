@@ -28,28 +28,50 @@
         border-radius: 4px;
     }
 
+    label.switch {
+        padding: 0.45rem 0.2rem;
+        font-size: 0.80rem;
+    }
+
+    span.spinner-eclipse {
+    	display: inline-block;
+    	border-left: .25rem solid #c53c3c;
+    	border-radius: 50%;
+    	width: 1.25rem;
+    	height: 1.25rem;
+    	-webkit-animation: spinner-donut-anim 1.2s linear infinite;
+    	animation: spinner-donut-anim 1.2s linear infinite;
+    }
+
   </style>
   <title>Test MiniCSS</title>
 </head>
 
     <body>
 
+        <!-- NAVBAR TEMPLATE -->
+        <script id="navbar-template" type="text/x-handlebars-template">
+            <span class="logo">REDSHIFT</span>
+            <button class="{{buttonUpdateClass}}" id="button-update">Start</button>
+            <button id="button-account">{{buttonAccount}}</button>
+            <button>Contact</button>
+            <span class="hidden spinner-eclipse"></span>
+        </script>
+
         <!-- HEADER TEMPLATE -->
         <script id="header-template" type="text/x-handlebars-template">
+
             <div class="row">
-                <div class="col-sm-1">
-                    <h6>REDSHIFT<small>today</small></h6>
-                </div>
-                <div class="col-sm-9">
-                    <h6>{{username}}<small class="xlm-account-number"></small></h6>
-                </div>
-                <div class="col-sm-1">
-                    <button id="button-update" class="small tertiary">Update</button>
+                <div class="col-sm-11">
+                    <h6>
+                        <span id="username">{{username}}</span>
+                        <small class="xlm-account-number"></small>
+                    </h6>
                 </div>
                 <div class="col-sm-1">
                     <h6><div class="input-group">
                         <input type="checkbox" id="test-net-switch" tabindex="0">
-                        <label for="test-net-switch" class="switch">testnet</label>
+                        <label for="test-net-switch" class="switch">TestNet</label>
                     </div></h6>
                 </div>
             </div>
@@ -71,18 +93,21 @@
             {{#each assets}}
             <div class="row">
                 <div class="col-sm-4">
-                    <div class="white-box">{{asset_type}} <small>({{asset_code}})</small></div>
+                    <div class="white-box">{{asset_desc}} <small>({{asset_code}})</small></div>
                 </div>
                 <div class="col-sm-4">
-                    <div class="white-box"><span class="xlm-balance">{{balance}}</span></div>
+                    <div class="white-box">
+                        <span class="xlm-balance">{{balance}}</span>
+                    </div>
                 </div>
                 <div class="col-sm-4">
-                    <div class="white-box"><span class="{{asset_type}}-balance-eur"></span> &euro;</div>
+                    <div class="white-box"><span class="{{asset_type}}-balance-eur">{{ex_rate}}</span> &euro;</div>
                 </div>
             </div>
             {{/each}}
         </script>
 
+        <header class="container navbar"></header>
         <div class="container header"></div>
         <div class="container body"></div>
         <div class="container footer"></div>
