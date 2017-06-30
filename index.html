@@ -43,6 +43,12 @@
     	animation: spinner-donut-anim 1.2s linear infinite;
     }
 
+    div.woof {
+        position: absolute;
+        bottom: 10px;
+        font-size: 0.80rem;
+    }
+
   </style>
   <title>Test MiniCSS</title>
 </head>
@@ -54,7 +60,7 @@
             <span class="logo">REDSHIFT</span>
             <button class="{{buttonUpdateClass}}" id="button-update">Start</button>
             <button id="button-account">{{buttonAccount}}</button>
-            <button>Contact</button>
+            <button id="button-demo">Demo</button>
             <span class="hidden spinner-eclipse"></span>
         </script>
 
@@ -110,7 +116,7 @@
         <header class="container navbar"></header>
         <div class="container header"></div>
         <div class="container body"></div>
-        <div class="container footer"></div>
+        <div class="container footer"><div class="woof"></div></div>
 
     </body>
     <script src="./js/lib/require.js"></script>

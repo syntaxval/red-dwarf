@@ -73,7 +73,7 @@ requirejs([
         }
 
         $.redshift.conf.url.network;
-        $.redshift.conf.account = "GDQXGA5JF2S4QLA55TBWZLX666INIOPRY52V2PAAKOOI7XU4P47TLLJ4";
+        $.redshift.conf.account = localStorage.getItem("redshift_G"); //"GDQXGA5JF2S4QLA55TBWZLX666INIOPRY52V2PAAKOOI7XU4P47TLLJ4";
         $.redshift.conf.url.tickerBase = "https://api.cryptonator.com/api/ticker/";
 
 
@@ -109,6 +109,7 @@ requirejs([
                 }, function (err) {
                     let error = err.message.status + " [" + err.message.title +
                         "]: " + err.message.detail;
+                    $(".woof").text(error);
                     console.log(error);
                     return dfd.reject({error: error});
                 });
@@ -200,6 +201,15 @@ requirejs([
                 }
             );
 
+            $.redshift.lib.addEvent("#button-demo", "click",
+                function (e) {
+                    $.redshift.conf.account = "GDQXGA5JF2S4QLA55TBWZLX666INIOPRY52V2PAAKOOI7XU4P47TLLJ4";
+                    localStorage.setItem("redshift_G", $.redshift.conf.account);
+                    $("#username").text(localStorage.getItem("redshift_G"));
+                    $("#button-update").removeClass("hidden");
+                }
+            );
+
             $.redshift.lib.addEvent("#button-update", "click",
                 function (e) {
                     $(".spinner-eclipse").removeClass("hidden");
@@ -224,7 +234,10 @@ requirejs([
                             return resultObj;
                         });
                     }, function (err) {
-                        // TODO: Add this error to message/log
+                        let error = err.message.status +
+                            " [" + err.message.title +
+                            "]: " + err.message.detail;
+                        $(".woof").text(error);
                         return $.Deferred.reject(err);
                     }).then(function (result) {
                         let bodySource = $("#body-template").html();
