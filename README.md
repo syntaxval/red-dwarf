@@ -1,2 +1,2 @@
-# redshift
-Simple account summary.
+# Red Dwarf
+Simple account summary. (defunct)
